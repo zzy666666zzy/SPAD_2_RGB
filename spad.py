@@ -12,22 +12,7 @@ Examples:
   python spad.py seg --models full adapter_ddcolor --eval-images 20
   python spad.py clean                  # dry-run
   python spad.py clean --apply          # zip archive, verify, then remove legacy root files
-
-# RGB
-python spad.py train --model full --epochs 10 --batch 8 --amp fp16 --tensorboard --device cuda
-
-# V17 Adapter
-python spad.py train --model adapter --epochs 10 --batch 8 --amp fp16 --tensorboard --device cuda
-
-# RGB compare
-python spad.py rgb --models raw mle full adapter_ddcolor --device cuda --split test --eval-images 20
-
-# Semantic Segmentation
-python spad.py seg --models full adapter_ddcolor --device cuda --eval-images 20
-
-python spad.py plot
 """
-
 import argparse
 import csv
 import json
@@ -249,7 +234,7 @@ def cm_stats(cm,classes=None):
 def image_gallery(path,rows,methods,tile):
     # Per scene two rows: top RGB images, bottom semantic masks.
     if not rows:return
-    headers=['VOC GT','DeepLab GT']+methods
+    headers=['VOC GT','Sparse intensity','DeepLab GT']+methods
     margin=12;gap=8;head=55;block=tile*2+43
     w=2*margin+len(headers)*(tile+gap);h=head+len(rows)*block+20
     canvas=Image.new('RGB',(w,h),'white');draw=ImageDraw.Draw(canvas)
@@ -259,12 +244,17 @@ def image_gallery(path,rows,methods,tile):
         yy=head+i*block
         draw.text((margin,yy),f'VOC val index {r["index"]}',fill='black')
         yy+=20
-        rgb=[r['gt_rgb'],r['gt_rgb']]+[r['rgb'][m] for m in methods]
-        seg=[color_mask(r['gt_mask']),color_mask(r['gt_pred'])]+[color_mask(r['masks'][m]) for m in methods]
+        rgb=[r['gt_rgb'],r['counts_display'],r['gt_rgb']]+[r['rgb'][m] for m in methods]
+        seg=[color_mask(r['gt_mask']),None,color_mask(r['gt_pred'])]+[color_mask(r['masks'][m]) for m in methods]
         for j,(a,b) in enumerate(zip(rgb,seg)):
             x=margin+j*(tile+gap)
             canvas.paste(a.resize((tile,tile),Image.Resampling.BICUBIC),(x,yy))
-            canvas.paste(b.resize((tile,tile),Image.Resampling.NEAREST),(x,yy+tile+3))
+            if b is not None:
+                canvas.paste(b.resize((tile,tile),Image.Resampling.NEAREST),(x,yy+tile+3))
+            else:
+                # The shared sparse observation is not a segmentation prediction.
+                draw.rectangle((x,yy+tile+3,x+tile-1,yy+2*tile+2),fill=(247,248,250))
+                draw.text((x+9,yy+tile+tile//2-4),'Input only',fill=(90,95,106))
     canvas.save(path)
 
 
@@ -291,7 +281,7 @@ def do_seg(args):
         pred_gt=predict_mask(segmentor,preprocess,src,truth.shape)
         present=np.bincount(truth[truth<21],minlength=21)>0
         for b in args.budgets:
-            preds,_=predictor.predict(gt,index,b)
+            preds,(k,est,bf,y)=predictor.predict(gt,index,b)
             predicted={'GT_crop':pred_gt}
             for m in methods:
                 srgb=C.linear_to_srgb(preds[m])
@@ -301,7 +291,9 @@ def do_seg(args):
                 rows.append({'voc_index':index,'budget_total':b,'method':m,**cm_stats(cm,present)})
             if len(galleries[b])<args.gallery_n:
                 galleries[b].append({'index':index,'budget':b,'gt_rgb':crop,'gt_mask':truth,
-                    'gt_pred':pred_gt,'rgb':{m:C.to_pil_srgb(preds[m]) for m in methods},
+                    'gt_pred':pred_gt,
+                    'counts_display':C.to_pil_srgb((k/3).clamp(0,1)),
+                    'rgb':{m:C.to_pil_srgb(preds[m]) for m in methods},
                     'masks':{m:predicted[m] for m in methods}})
         if (j+1)%5==0 or j+1==len(ids):print(f'VOC: {j+1}/{len(ids)}',flush=True)
     gtc=(cms[('GT_crop',args.budgets[0])].sum(1)>0)

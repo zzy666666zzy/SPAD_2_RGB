@@ -45,3 +45,22 @@ Thumbs.db
 /_plot_smoke/
 /_bridge_mock/
 /_test_final.py
+
+# Historical root-level prototypes, one-off diagnostics and launcher scripts.
+# They remain on your computer but should not reappear after Git untracking.
+/train_v15.py
+/train_eval_v*.py
+/eval_v*.py
+/v17_v*_compat.py
+/RUN_*.ps1
+/run_spad_pnp.py
+/run_scenes.py
+/SPAD_binomial_prox.py
+/SPAD_photon_holdout.py
+/luma_band_diagnostic.py
+/batch_bit2bit.py
+/spad_physics_v13.py
+/spad_import.py
+/rois.json
+/remove_files.py
+/spad_mac_quickbench.py
