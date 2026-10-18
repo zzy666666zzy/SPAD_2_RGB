@@ -1,0 +1,47 @@
+# Keep datasets, pretrained third-party code, private experiments, and references LOCAL.
+/archive/
+/data/
+/external/
+/papers/
+/runs/
+
+# Models, dataset dumps, and large intermediate arrays anywhere in the repo
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.npy
+*.npz
+*.tif
+*.tiff
+*.onnx
+*.h5
+*.hdf5
+
+# Python and tooling
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+.env
+.env.*
+.vscode/
+.idea/
+.DS_Store
+._*
+Thumbs.db
+*.log
+
+# Local smoke/regression results
+/_smoke_runs/
+/_regression/
+/_eval_smoke/
+/_infer_smoke/
+/_infer_real_smoke/
+/_plot_smoke/
+/_bridge_mock/
+/_test_final.py

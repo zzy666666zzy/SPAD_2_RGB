@@ -1,0 +1,14 @@
+# Install an appropriate CUDA-enabled PyTorch + torchvision build separately:
+# https://pytorch.org/get-started/locally/
+numpy>=1.24
+Pillow>=10.0
+opencv-python>=4.8
+matplotlib>=3.7
+tensorboard>=2.14
+huggingface-hub>=0.25
+# Optional for --model bridge / --model bridge_fused:
+diffusers>=0.30
+transformers>=4.40
+accelerate>=0.30
+safetensors>=0.4
+# DDColor may require other dependencies from its official repository.
